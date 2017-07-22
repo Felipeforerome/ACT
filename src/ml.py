@@ -1,26 +1,10 @@
-import numpy as np
-import pandas as pd
 from collections import Counter
+
+import numpy as np
 from sklearn import svm, cross_validation, neighbors
 from sklearn.ensemble import VotingClassifier, RandomForestClassifier
 
-
-def process_data_pct_change(ticker, hm_tenmin=6):
-    """
-    Processes the data to add the corresponding percentage change in th end of the interval
-    :param ticker: Ticker to be processed
-    :param hm_tenmin: How many tenths of minutes to group together
-    :return: returns the tickers in the joined cindex and the joined index with percent change between tenths of minutes for the given ticker
-    """
-    df = pd.read_csv('joined_cindex.csv', index_col=0)
-    tickers = df.columns.values.tolist()
-    df.fillna(0, inplace=True)
-
-    for i in range(1, hm_tenmin + 1):
-        df['{}_{}t'.format(ticker, i)] = (df[ticker].shift(-i) - df[ticker]) / df[ticker]
-
-    df.fillna(0, inplace=True)
-    return tickers, df
+from src.processes import process_data_pct_change
 
 
 def buy_sell_hold(*args):

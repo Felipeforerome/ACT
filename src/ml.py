@@ -1,30 +1,34 @@
 import numpy as np
 import pandas as pd
-import pickle
 from collections import Counter
 from sklearn import svm, cross_validation, neighbors
 from sklearn.ensemble import VotingClassifier, RandomForestClassifier
 
-hm_tenmin = 6
 
-def process_data_for_labels(ticker):
+def process_data_pct_change(ticker, hm_tenmin=6):
+    """
+    Processes the data to add the corresponding percentage change in th end of the interval
+    :param ticker: Ticker to be processed
+    :param hm_tenmin: How many tenths of minutes to group together
+    :return: returns the tickers in the joined cindex and the joined index with percent change between tenths of minutes for the given ticker
+    """
     df = pd.read_csv('joined_cindex.csv', index_col=0)
     tickers = df.columns.values.tolist()
     df.fillna(0, inplace=True)
 
     for i in range(1, hm_tenmin + 1):
-        print(df[ticker].shift(-i))
-        print(df[ticker])
-        print(df[ticker].shift(-i) - df[ticker])
         df['{}_{}t'.format(ticker, i)] = (df[ticker].shift(-i) - df[ticker]) / df[ticker]
 
     df.fillna(0, inplace=True)
-    print(tickers)
-    print(df)
     return tickers, df
 
 
 def buy_sell_hold(*args):
+    """
+    Tells, based on the percentage change towards the future, whether it should be a buy, sell or hold
+    :param args: column of price percentage changes between to moments
+    :return: 1, -1, 0 meaning buy, sell, or hols, if the change is higher, lower, of neither in those changes
+    """
     cols = [c for c in args]
     requirement = 0.0025
     for col in cols:
@@ -35,8 +39,14 @@ def buy_sell_hold(*args):
     return 0
 
 
-def extract_featuressets(ticker):
-    tickers, df = process_data_for_labels(ticker)
+def extract_features_sets(ticker, hm_tenmin=6):
+    """
+    Extracts the feature sets i.e. values that affect the outcome
+    :param ticker: Ticker for which the features are being extracted
+    :param hm_tenmin: How many tenths of minutes to group together
+    :return: labels, features, and the original dataframe
+    """
+    tickers, df = process_data_pct_change(ticker)
 
     df['{}_target'.format(ticker)] = list(
         map(buy_sell_hold, *[df["{}_{}t".format(ticker, i)] for i in range(1, hm_tenmin + 1)]))
@@ -60,13 +70,16 @@ def extract_featuressets(ticker):
 
 
 def do_ml(ticker):
-    X, y, df = extract_featuressets(ticker)
+    """
+    Runs 3 machine learning algorithm, inside a Voting classifier, to learn when it should buy sell of hold
+    :param ticker: Ticker of the Cryptocurrency to undergo this process
+    :return: returns the confidence of the model describing the data
+    """
+    X, y, df = extract_features_sets(ticker)
 
     X_train, X_test, y_train, y_test = cross_validation.train_test_split(X,
                                                                          y,
                                                                          test_size=0.25)
-
-    # clf = neighbors.KNeighborsClassifier()
 
     clf = VotingClassifier([('lsvc', svm.LinearSVC()),
                             ('knn', neighbors.KNeighborsClassifier()),
@@ -80,5 +93,3 @@ def do_ml(ticker):
     print('Accuracy', confidence)
 
     return confidence
-
-

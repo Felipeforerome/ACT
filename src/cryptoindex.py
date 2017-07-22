@@ -1,24 +1,29 @@
+import os
+import pickle
+
 import bs4 as bs
 import matplotlib.pyplot as plt
-from matplotlib import style
-from multiprocessing import Pool
 import numpy as np
-import os
 import pandas as pd
-import pickle
-import requests
-from tickers import prices
-
+from matplotlib import style
+# Import requiered to access Iconomi
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 
+from src.tickers import prices
+
 style.use('ggplot')
 
+
 def save_index_tickers():
+    """
+    Saves the tickers and weights of Iconomi in a pickle
+    :return: The tickers and weights of the Iconomi components
+    """
     url = 'https://www.iconomi.net/dashboard/#/INDEX'
-    #Going to the URL
+    # Going to the URL
     driver = webdriver.PhantomJS()
     driver.get(url)
     # waiting for presence of an element
@@ -37,7 +42,7 @@ def save_index_tickers():
         ticker = row.findAll('td')[0].text
         tickers.append(ticker[ticker.find("(") + 1:ticker.find(")")])
         comp = row.findAll('td')[2].text
-        comps.append(float(comp[0:comp.find(" ")-1]))
+        comps.append(float(comp[0:comp.find(" ") - 1]))
 
     with open('crindex.pickle', 'wb') as f:
         pickle.dump(tickers, f)
@@ -48,7 +53,11 @@ def save_index_tickers():
     return tickers, comps
 
 
-def aquire_data(ticker):
+def acquire_data(ticker):
+    """
+    Gets the price history for a given cryptocurrency and saves it in de coins_dfs folder
+    :param ticker: Ticker for which price history is being looked
+    """
     to = 'BTC'
     if ticker == 'BTC':
         print(to)
@@ -64,8 +73,11 @@ def aquire_data(ticker):
         print('Already have {}'.format(ticker))
 
 
-# TODO Only update missing info
 def get_data(reload_cindex=False):
+    """
+    Gets the data for de cryptocurrencies included in cindex pickle
+    :param reload_cindex:Whether all data should be force reloaded or not
+    """
     if reload_cindex:
         tickers = save_index_tickers()
         os.removedirs('coins_dfs')
@@ -77,11 +89,13 @@ def get_data(reload_cindex=False):
         os.makedirs('coins_dfs')
 
     for ticker in tickers:
-        aquire_data(ticker)
-
+        acquire_data(ticker)
 
 
 def compile_data():
+    """
+    Takes the close values of all the data in coins:dfs and joins it in a single csv
+    """
     with open('crindex.pickle', 'rb') as f:
         tickers = pickle.load(f)
 
@@ -102,11 +116,13 @@ def compile_data():
         if count % 10 == 0:
             print(count)
 
-    print(main_df.head())
     main_df.to_csv('joined_cindex.csv')
 
 
 def visualize_data():
+    """
+    Displays a heatmap of correlation between each cryptocurrency (G=1 & R=-1)
+    """
     df = pd.read_csv('joined_cindex.csv')
     # df['ETH'].plot()
     # plt.show()

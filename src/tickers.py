@@ -1,17 +1,9 @@
 # Importing de requiered libraries
-from bittrex.bittrex import Bittrex
+
 import pandas as pd
 import requests
 
-# Keys needed to access Bittrex's API
-api_key = 'x'
-api_secret = 'x'
 
-# Api Object
-api = Bittrex(api_key, api_secret)
-
-
-# Function that returns the price history from Bittrex for a given market for the past week
 def prices(market, to):
     """
     Gets the Bittrex price history for a week for a given market, usually BTC to something else

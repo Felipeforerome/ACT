@@ -107,3 +107,4 @@ coins_dfs/
 cromposition.pickle
 joined_cindex.csv
 tk.csv
+/bittrex.py
